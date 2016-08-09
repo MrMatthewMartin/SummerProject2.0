@@ -28,15 +28,18 @@ void found(std::map<std::string, int>::iterator pIt, std::map<std::string, int> 
 
 
 int main() {
+    std::locale native{""};     // Get native locale
+    std::cin.imbue(native);     // Interpret the input and output according
+    std::cout.imbue(native);    // to native locale
 //  Can declare typedefs for clearer understanding of code
     typedef std::map<std::string, int> count_map;
     typedef std::map<std::string, int> ::iterator count_iter;
 //
     count_map counts;
     std::string word{};
-    std::ifstream in{"Test.txt"};
+    std::ifstream in{"explore15.txt"};
     if (not in)
-        std::perror("Test.txt");
+        std::perror("explore15.txt");
     else {
         std::string line, item;
 
@@ -47,8 +50,8 @@ int main() {
             while (ss >> item){
                 std::string copy{};
                 for (char ch : item)
-                    if (std::isalnum(ch, std::locale{""}))
-                        copy.push_back(ch);
+                    if (std::isalnum(ch, native))
+                        copy.push_back(toupper(ch, native));
                 if (not copy.empty())
                     ++counts[copy];
             }
@@ -61,7 +64,7 @@ int main() {
             if (element.first.size() > longest)
                 longest = element.first.size();
 
-        count_iter the{counts.find("the")};
+        count_iter the{counts.find("THE")};
 
         const int count_size{10};
 //      Output duplicates to a file
