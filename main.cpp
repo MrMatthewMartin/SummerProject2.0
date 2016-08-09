@@ -24,9 +24,9 @@ typedef std::string::size_type str_size;
  * the native locale. C++ initially imbues streams with the classic locale.
  * @param locale the native locale
  * */
-void initialize_streams(std::locale native){
-    std::cin.imbue(native);     // Interpret the input and output according
-    std::cout.imbue(native);    // to native locale
+void initialize_streams(){
+    std::cin.imbue(std::locale{});     // Interpret the input and output according
+    std::cout.imbue(std::locale{});    // to native locale
 };
 
 /* Could replace iterator with this if wanted to use auto.. can't just use auto
@@ -58,17 +58,35 @@ str_size longest_word(count_map pcounts) {
             Longest = element.first.size();
     return Longest;
 }
+
+/* Test for non-letter.
+ * @param ch the character to test
+ * @return true if @p ch is not a character that makes up a word
+ */
+bool non_letter(char ch) {
+    return not std::isalnum(ch, std::locale());
+}
+
+/* Convert to lowercase.
+ * Use canonical form by converting to uppercase first, and then
+ * to lower case
+ * @param ch the character to test
+ * @return the character converted to lower case
+ * */
+char lowercase(char ch){
+    return std::tolower(ch, std::locale());
+}
+
 /* Check line for only alphanumeric characters
  *  @param str the orignal string
- *  @param loc the locale used to test the characters
  *  @return a santized copy of the string
  * */
-std::string word_extractor(std::string pItem, std::locale pNative){
-    std::string copy;
-    for (char ch : pItem)
-        if (std::isalnum(ch, pNative))
-            copy.push_back(toupper(ch, pNative));
-    return copy;
+std::string word_extractor(std::string pItem){
+    // Remove all non-letters from the string and then erase them
+    pItem.erase(std::remove_if(pItem.begin(), pItem.end(), non_letter), pItem.end());
+    // Convert the remnants of the string to lower case
+    std::transform(pItem.begin(), pItem.end(), pItem.begin, lowercase);
+    return pItem;
 }
 
 /* Print the word and the number of counts to file if file opens or to
@@ -77,7 +95,7 @@ std::string word_extractor(std::string pItem, std::locale pNative){
  * */
 void output(count_map pCounts) {
 //  Output duplicates to a file
-    count_iter the{pCounts.find("THE")};
+    count_iter the{pCounts.find("the")};
     const int count_size{10};
     std::ofstream out{"ExploreOut.txt"};
     if (not out) {
@@ -98,8 +116,8 @@ void output(count_map pCounts) {
 }
 
 int main() {
-    std::locale native{""};     // Get native locale
-    initialize_streams(native);
+    std::locale::global(std::locale{""});
+    initialize_streams();
     count_map counts;
     std::string word{};
     std::ifstream in{"explore15.txt"};
@@ -110,7 +128,7 @@ int main() {
         while (getline (in, line)) {
             std::stringstream ss(line); // Insert the string into a stream
             while (ss >> item){
-                std::string copy{word_extractor(item, native)};
+                std::string copy{word_extractor(item)};
                 if (not copy.empty())
                     ++counts[copy];
             }
