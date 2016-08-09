@@ -10,6 +10,7 @@
 #include <cassert>
 #include <map>
 #include <sstream>
+#include <locale>
 
 
 /* Could replace iterator with this if wanted to use auto.. can't just use auto
@@ -33,17 +34,26 @@ int main() {
 //
     count_map counts;
     std::string word{};
-    std::ifstream in{"explore15.txt"};
+    std::ifstream in{"Test.txt"};
     if (not in)
-        std::perror("explore15.txt");
+        std::perror("Test.txt");
     else {
         std::string line, item;
 
         while (getline (in, line)) {
-            line.erase(line.find_last_not_of("\n\r")+1);
+//            line.erase(line.find_last_not_of("\n\r")+1);
             std::stringstream ss(line); // Insert the string into a stream
-            while (ss >> item)
-                ++counts[item];
+
+            while (ss >> item){
+                std::string copy{};
+                for (char ch : item)
+                    if (std::isalnum(ch) and ch != '.') {
+                        copy.push_back(ch);
+                    }
+                if (not copy.empty())
+                    ++counts[item];
+            }
+
         }
 
 
@@ -66,7 +76,7 @@ int main() {
         }
         else
         {
-            std::cout << "Written to file";
+            std::cout << "Written to file\n";
             found(the, counts);
             for (auto element : counts)
                 out << std::setw(longest) << std::left << element.first
