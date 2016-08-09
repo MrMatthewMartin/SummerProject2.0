@@ -47,11 +47,10 @@ int main() {
             while (ss >> item){
                 std::string copy{};
                 for (char ch : item)
-                    if (std::isalnum(ch) and ch != '.') {
+                    if (std::isalnum(ch, std::locale{""}))
                         copy.push_back(ch);
-                    }
                 if (not copy.empty())
-                    ++counts[item];
+                    ++counts[copy];
             }
 
         }
