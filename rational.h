@@ -1,3 +1,9 @@
+//
+// Created by Matthew Martin on 23/08/2016.
+//
+
+#ifndef SUMMERPROJECT2_0_RATIONAL_H
+#define SUMMERPROJECT2_0_RATIONAL_H
 // Listing 29-5. Adding the Ability to Initialize a rational Object
 #include <cassert>
 #include <cstdlib>
@@ -145,7 +151,7 @@ inline bool operator>=(rational const& a, rational const& b){
 
 rational operator+(rational const& lhs, rational const& rhs){
     return rational{lhs.numerator() * rhs.denominator() +rhs.numerator() * lhs.denominator(),
-                lhs.denominator() * rhs.denominator()};
+                    lhs.denominator() * rhs.denominator()};
 }
 
 rational operator-(rational const& r){
@@ -154,7 +160,7 @@ rational operator-(rational const& r){
 
 rational operator-(rational const& rhs, rational const& lhs){
     return {lhs.numerator() * rhs.denominator() - rhs.numerator() * lhs.denominator(),
-    lhs.denominator() * rhs.denominator()};
+            lhs.denominator() * rhs.denominator()};
 }
 
 rational operator*(rational const& lhs, rational const& rhs){
@@ -246,3 +252,5 @@ int main()
     if (std::cin.bad())
         std::cerr << "Unrecoverable input failure\n";
 }
+
+#endif //SUMMERPROJECT2_0_RATIONAL_H

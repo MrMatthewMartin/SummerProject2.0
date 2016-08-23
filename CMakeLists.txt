@@ -3,7 +3,7 @@ project(SummerProject2_0)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES main.cpp test.hpp)
+set(SOURCE_FILES main.cpp test.hpp rational.h)
 
 file(GLOB SummerProject2_0
         "*.h"
