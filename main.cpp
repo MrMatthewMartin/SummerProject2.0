@@ -1,132 +1,156 @@
-// Listing 26-3. Demonstrating Floating-Point Output
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <locale>
+// Listing 34-1. New BMI Program
+#include <algorithm>
+#include <cstdlib>
 #include <iomanip>
+#include <iostream>
+#include <limits>
+#include <locale>
+#include <string>
+#include <vector>
+#include <sstream>
 
-void initialize_streams(){
-    std::cin.imbue(std::locale{});
-    std::cout.imbue(std::locale{});
-}
-
-/** @brief Skip the rest of the input line. */
-void skip_line()
+/// Compute body-mass index from height in centimeters and weight in kilograms.
+int compute_bmi(int height, int weight)
 {
-    std::cin.ignore(std::numeric_limits<int>::max(), '\n');
-}
-
-std::string sanitize(std::string const& str){
-    std::string result{};
-    for (char c : str)
-        if (std::isalpha(c, std::locale{}) or c == ' ' or c == '-')
-            result.push_back(c);
-    return result;
-}
-
-int BMICalculator(int const weight, int const height){
     return static_cast<int>(weight * 10000 / (height * height) + 0.5);
 }
 
-/// Print a floating-point number in three different formats.
-/// @param precision the precision to use when printing @p value
-/// @param value the floating-point number to print
-void print(int precision, float value)
+/// Skip the rest of the input line.
+void skip_line(std::istream& in)
 {
-    std::cout.precision(precision);
-    std::cout << std::scientific << value << '\t';
-
-    // Set the format to general.
-    std::cout.unsetf(std::ios_base::floatfield);
-    std::cout << value << '\n';
+    in.ignore(std::numeric_limits<int>::max(), '\n');
 }
 
-void printHeader(){
-    std::cout << std::setw(5) << "ht(cm) "
-              << std::setw(5) << "Wt(kg) "
-              << std::setw(4) << "Sex "
-              << std::setw(4) << "BMI"
-              << std::setw(5) << " Name" << std::endl;
-}
+/// Represent one person's record, storing the person's name, height, weight,
+/// sex, and body-mass index (BMI), which is computed from the height and weight.
+struct record
+{
+    record() : height_{0}, weight_{0}, bmi_{0}, sex_{'?'}, name_{}
+    {}
 
-void print(int const threshold, std::vector<std::string> names,
-           std::vector<int> weight, std::vector<int> height,
-           std::vector<char> sex, std::vector<int> BMI){
-    std::cout << std::endl;
-    std::cout << "Male data\n";
-    printHeader();
-    for (std::vector<int>::size_type i(0); i!=height.size(); ++i){
-        // Add in Mean and median BMI
+    /// Get this record, overwriting the data members.
+    /// Error-checking omitted for brevity.
+    /// @return true for success or false for eof or input failure
+    bool read(std::istream& in, int num)
+    {
+        std::cout << "Name " << num << ": ";
+        std::string name{};
+        if (not std::getline(in, name))
+            return false;
 
-        if ( sex.at(i) == 'M' or sex.at(i) == 'm'){
-            std::cout << std::setw(6) << height.at(i)
-                      << std::setw(6) << weight.at(i)
-                      << std::setw(4) << sex.at(i)
-                      << std::setw(4) << BMI.at(i);
-            if (BMI.at(i) >= threshold)
-                std::cout << '*';
-            else
-                std::cout << ' ';
-            std::cout << std::setw(15) << names.at(i) << '\n';
-        }
+        std::cout << "Height (cm): ";
+        int height{};
+        if (not (in >> height))
+            return false;
+        skip_line(in);
+
+        std::cout << "Weight (kg): ";
+        int weight{};
+        if (not (in >> weight))
+            return false;
+        skip_line(in);
+
+        std::cout << "Sex (M or F): ";
+        char sex{};
+        if (not (in >> sex))
+            return false;
+        skip_line(in);
+        sex = std::toupper(sex, std::locale());
+
+        // Store information into data members only after reading
+        // everything successfully.
+        name_ = name;
+        height_ = height;
+        weight_ = weight;
+        sex_ = sex;
+        bmi_ = compute_bmi(height_, weight_);
+        return true;
     }
 
-    std::cout << std::endl;
-    std::cout << "Female data\n";
-    printHeader();
-    for (std::vector<int>::size_type i(0); i!=height.size(); ++i){
-        // Add in Mean and median BMI
-
-        if ( sex.at(i) == 'F' or sex.at(i) == 'f'){
-            std::cout << std::setw(6) << height.at(i)
-                      << std::setw(6) << weight.at(i)
-                      << std::setw(4) << sex.at(i)
-                      << std::setw(4) << BMI.at(i);
-            if (BMI.at(i) >= threshold)
-                std::cout << '*';
-            else
-                std::cout << ' ';
-            std::cout << std::setw(15) << names.at(i) << '\n';
-        }
+    /// Print this record to @p out.
+    void print(std::ostream& out, int threshold) const
+    {
+        out << std::setw(6) << height_
+            << std::setw(7) << weight_
+            << std::setw(3) << sex_
+            << std::setw(6) << bmi_;
+        if (bmi_ >= threshold)
+            out << '*';
+        else
+            out << ' ';
+        out << ' ' << name_ << '\n';
     }
+
+    int height_;       ///< height in centimeters
+    int weight_;       ///< weight in kilograms
+    int bmi_;          ///< Body-mass index
+    char sex_;         ///< 'M' for male or 'F' for female
+    std::string name_; ///< Person’s name
 };
 
-char checkChar(std::string const pMessage){
-    std::string input{""};
-    char myChar  = {0};
-    while (true) {
-        std::cout << pMessage;
-        getline(std::cin, input);
 
-        if (input.length() == 1 ) {
-            myChar = input[0];
-            break;
+/** Print a table.
+ * Print a table of height, weight, sex, BMI, and name.
+ * Print only records for which sex matches @p sex.
+ * At the end of each table, print the mean and median BMI.
+ */
+void print_table(char sex, std::vector<record>& records, int threshold)
+{
+    std::cout << "Ht(cm) Wt(kg) Sex  BMI  Name\n";
+
+    float bmi_sum{};
+    long int bmi_count{};
+    std::vector<int> tmpbmis{}; // store only the BMIs that are printed
+    // in order to compute the median
+    for (auto rec : records)
+    {
+        if (rec.sex_ == sex)
+        {
+            bmi_sum = bmi_sum + rec.bmi_;
+            ++bmi_count;
+            tmpbmis.push_back(rec.bmi_);
+            rec.print(std::cout, threshold);
         }
-
-        std::cout << "Invalid character, please try again" << std::endl;
-        //skip_line();
     }
-    return myChar;
+
+    // If the vectors are not empty, print basic statistics.
+    if (bmi_count != 0)
+    {
+        std::cout << "Mean BMI = "
+                  << std::setprecision(1) << std::fixed << bmi_sum / bmi_count
+                  << '\n';
+
+        // Median BMI is trickier. The easy way is to sort the
+        // vector and pick out the middle item or items.
+        std::sort(tmpbmis.begin(), tmpbmis.end());
+        std::cout << "Median BMI = ";
+        // Index of median item.
+        std::size_t i{tmpbmis.size() / 2};
+        if (tmpbmis.size() % 2 == 0)
+            std::cout << (tmpbmis.at(i) + tmpbmis.at(i-1)) / 2.0 << '\n';
+        else
+            std::cout << tmpbmis.at(i) << '\n';
+    }
 }
 
 int checkInt(std::string const pMessage){
     std::string input{};
     // How to get a number.
     int myNumber{0};
-        while (true) {
-            std::cout << pMessage;
-            getline(std::cin, input);
+    while (true) {
+        std::cout << pMessage;
+        getline(std::cin, input);
 
-            // This code converts from string to number safely.
-            std::stringstream myStream(input);
-            if (myStream >> myNumber)
-                return myNumber;
-            std::cout << "Invalid number, please try again" << std::endl;
-            //skip_line();
-        }
+        // This code converts from string to number safely.
+        std::stringstream myStream(input);
+        if (myStream >> myNumber)
+            return myNumber;
+        std::cout << "Invalid number, please try again" << std::endl;
+        //skip_line();
+    }
 }
 
-bool checkBool(std::string const pMessage){
+bool checkBool(std::string const pMessage) {
     std::string input{};
     // How to get a number.
     bool myNumber{0};
@@ -141,84 +165,39 @@ bool checkBool(std::string const pMessage){
         std::cout << "Not a 1 (for yes) or 0 (for no), please try again" << std::endl;
         //skip_line();
     }
-
 }
 
-std::string checkString(std::string const pMessage){
-    std::string input{""};
-
-    // How to get a string/sentence with spaces
-    std::cout << pMessage;
-    getline(std::cin, input);
-
-    std::string copy{sanitize(input)};
-    //std::cout << "You entered: " << copy << std::endl ;
-
-    return copy;
-}
-
-char sex(){
-    char input{0};
-    while (true) {
-        input = checkChar("Sex (M or F): ");
-        if (std::isalpha(input, std::locale{}) and (input == 'M' or input == 'm'
-                                                   or input == 'F' or input == 'f'))
-            return input;
-        std::cout << "Invalid input. Please check your input.\n";
-    }
-}
-
-///  Function to retrieve BMI details of user
-/// @param pName stores names
-/// @param pw & ph store weight and height respectively
-/// @param ps stores sex
-/// @param pBMI stores calculated BMI
-/// @returns details to the vectors contained in main program
-void getdetails(std::vector<std::string>& pName,
-                std::vector<int>& pw, std::vector<int>& ph,
-                std::vector<char>& ps, std::vector<int>& pBMI,
-                int const thresh) {
-    pName.push_back(checkString("Name: "));
-    ph.push_back(checkInt("Height (cm): "));
-    pw.push_back(checkInt("Weight (kg): "));
-    ps.push_back(sex());
-    //Calculate and push back BMI
-    pBMI.push_back(BMICalculator(pw.back(), ph.back()));
-
-    if (pBMI.back() >= thresh){
-        std::cout << "BMI: " << pBMI.back() << std::endl;
-    }
-}
-
-/// Main program.
+/** Main program to compute BMI. */
 int main()
 {
     std::locale::global(std::locale{""});
-    initialize_streams();
+    std::cout.imbue(std::locale{});
+    std::cin.imbue(std::locale{});
 
-    std::vector<std::string> Names;
-    std::vector<int> weight;
-    std::vector<int> height;
-    std::vector<char> sex;
-    std::vector<int> BMI;
+    std::vector<record> records{};
+    int threshold{};
 
-    // Retrieve threshold BMI
-    int ThreshBMI{0};
-    while (true) {
-        ThreshBMI = checkInt("Enter a threshold BMI: ");
-        std::cout << "You entered: " << ThreshBMI << ", is this correct?";
-        if (checkBool(" Enter 1 for yes and 0 for no: "))
-            break;
-    }
-    //skip_line();
-    std::cout << std::endl;
-    while (true) {
-        getdetails(Names, weight, height, sex, BMI, ThreshBMI);
+    std::cout << "Enter threshold BMI: ";
+    if (not (std::cin >> threshold))
+        return EXIT_FAILURE;
+    skip_line(std::cin);
+
+    std::cout << "Enter name, height (in cm),"
+            " and weight (in kg) for each person:\n";
+    record rec{};
+    while (true)
+    {
+        rec.read(std::cin, records.size()+1);
+        records.push_back(rec);
         std::cout << "Would you like to enter more details? ";
         if (!checkBool("Enter 1 for yes and 0 for no: "))
             break;
+        std::cout << "BMI = " << rec.bmi_ << '\n';
     }
 
-    print(ThreshBMI, Names, weight, height, sex, BMI);
-
+    // Print the data.
+    std::cout << "\n\nMale data\n";
+    print_table('M', records, threshold);
+    std::cout << "\nFemale data\n";
+    print_table('F', records, threshold);
 }
